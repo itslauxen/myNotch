@@ -5,8 +5,10 @@ import Foundation
 /// Pasta própria do myNotch: notas e cópias dos prints ficam aqui.
 enum AppPaths {
     static var dir: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("myNotch", isDirectory: true)
+        // MYNOTCH_DIR troca a pasta: o gerador do GIF do README usa uma de exemplo, sem tocar na real.
+        let base = ProcessInfo.processInfo.environment["MYNOTCH_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("myNotch", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         return base
     }

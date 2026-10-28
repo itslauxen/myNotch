@@ -196,6 +196,9 @@ final class LayoutDasCaixas: NSLayoutManager {
 
 /// Clicar numa caixinha marca ou desmarca (troca ☐ por ☑ no texto, com desfazer).
 final class TextoDaNota: NSTextView {
+    /// Primeiro clique com o painel inativo já marca a caixinha (sem isto ele só ativava a janela).
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func mouseDown(with event: NSEvent) {
         let ponto = convert(event.locationInWindow, from: nil)
         if let lm = layoutManager, let tc = textContainer, let s = textStorage, s.length > 0 {
@@ -347,7 +350,7 @@ struct OrbDeVoz: View {
                 .shadow(color: .red.opacity(0.8), radius: 3 + n * 8)
         }
         .animation(.easeOut(duration: 0.12), value: nivel.valor)
-        .help("Ouvindo… clique para parar")
+        .help(tr("Ouvindo… clique para parar", "Listening… click to stop"))
     }
 }
 
@@ -369,22 +372,22 @@ struct NotesView: View {
 
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
-                    botao("bold", "Negrito (⌘B)", "b") { editor.negrito() }
-                    botao("italic", "Itálico (⌘I)", "i") { editor.italico() }
+                    botao("bold", tr("Negrito (⌘B)", "Bold (⌘B)"), "b") { editor.negrito() }
+                    botao("italic", tr("Itálico (⌘I)", "Italic (⌘I)"), "i") { editor.italico() }
                 }
                 .frame(maxHeight: .infinity)
                 HStack(spacing: 6) {
-                    botao("textformat.size", "Título (⇧⌘T)", "t", [.command, .shift]) { editor.titulo() }
-                    botao("checkmark.square", "Checkbox (⇧⌘C)", "c", [.command, .shift]) { editor.checkbox() }
+                    botao("textformat.size", tr("Título (⇧⌘T)", "Heading (⇧⌘T)"), "t", [.command, .shift]) { editor.titulo() }
+                    botao("checkmark.square", tr("Checkbox (⇧⌘C)", "Checkbox (⇧⌘C)"), "c", [.command, .shift]) { editor.checkbox() }
                 }
                 .frame(maxHeight: .infinity)
                 HStack(spacing: 6) {
-                    botao("underline", "Sublinhado (⌘U)", "u") { editor.sublinhado() }
-                    botao("strikethrough", "Riscado (⇧⌘X)", "x", [.command, .shift]) { editor.riscado() }
+                    botao("underline", tr("Sublinhado (⌘U)", "Underline (⌘U)"), "u") { editor.sublinhado() }
+                    botao("strikethrough", tr("Riscado (⇧⌘X)", "Strikethrough (⇧⌘X)"), "x", [.command, .shift]) { editor.riscado() }
                 }
                 .frame(maxHeight: .infinity)
                 HStack(spacing: 6) {
-                    botao("list.bullet", "Lista (⇧⌘L)", "l", [.command, .shift]) { editor.lista() }
+                    botao("list.bullet", tr("Lista (⇧⌘L)", "List (⇧⌘L)"), "l", [.command, .shift]) { editor.lista() }
                     botaoDitado
                 }
                 .frame(maxHeight: .infinity)
@@ -422,7 +425,7 @@ struct NotesView: View {
         .buttonStyle(.plain)
         // Padrão ⇧⌘V (⌘V sozinho é o colar da nota); dá para trocar nos Ajustes.
         .keyboardShortcut(atalhoDitado.tecla, modifiers: atalhoDitado.swiftUI)
-        .help(ditado.erro ?? (ditado.ouvindo ? "Parar ditado (\(atalhoDitado.texto))" : "Ditar (\(atalhoDitado.texto))"))
+        .help(ditado.erro ?? (ditado.ouvindo ? tr("Parar ditado", "Stop dictation") : tr("Ditar", "Dictate")) + " (\(atalhoDitado.texto))")
     }
 
     private func botao(

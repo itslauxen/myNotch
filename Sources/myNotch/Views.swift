@@ -72,6 +72,11 @@ struct AbasView: View {
     @AppStorage(Config.novaNotes) private var novaLigada = true
 
     private var asa: CGFloat { (NotchPanel.larguraExpandida(para: .player) - NotchPanel.larguraNotch) / 2 }
+    /// Folga entre a borda do painel e o grupo de ícones da esquerda (centralizado na asa).
+    private var margem: CGFloat {
+        let n = CGFloat(Aba.esquerda(nova: novaLigada).count)
+        return (asa - (n * 26 + (n - 1) * 14)) / 2
+    }
     private var asaAtual: CGFloat { (NotchPanel.larguraExpandida(para: aba) - NotchPanel.larguraNotch) / 2 }
 
     var body: some View {
@@ -82,9 +87,11 @@ struct AbasView: View {
             .frame(width: asa, height: NotchPanel.alturaBanda)
             .frame(width: asaAtual, alignment: .trailing)
             Color.clear.frame(width: NotchPanel.larguraNotch)
-            // Espelho da asa esquerda: a engrenagem fica no mesmo lugar em qualquer tamanho de aba.
+            // Espelho do primeiro ícone da esquerda (mesma distância da borda), e no mesmo lugar
+            // em qualquer tamanho de aba.
             icone(.ajustes)
-                .frame(width: asa, height: NotchPanel.alturaBanda)
+                .padding(.trailing, margem)
+                .frame(width: asa, height: NotchPanel.alturaBanda, alignment: .trailing)
                 .frame(width: asaAtual, alignment: .leading)
             Spacer(minLength: 0)
         }
@@ -93,10 +100,10 @@ struct AbasView: View {
 
     private func icone(_ item: Aba) -> some View {
         Image(systemName: item.icone)
-            // doc.text vinha sempre branco: força o desenho de uma cor só, que respeita o cinza
-            .symbolRenderingMode(.monochrome)
             .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(aba == item ? Color.white : Color.secondary)
+            .foregroundStyle(Color.white)
+            // Inativo apagado por opacidade: no macOS 27 o doc.text ignora a cor e saía sempre branco.
+            .opacity(aba == item ? 1 : 0.5)
             .frame(width: 26, height: 26)
             .contentShape(Rectangle())
             .onHover { dentro in
@@ -145,7 +152,8 @@ struct PlayerView: View {
 
     var body: some View {
         if !music.online {
-            Text("Abra o YouTube Music para controlar daqui")
+            // Genérico: a música pode vir do YouTube Music ou de um vídeo do YouTube no Chrome.
+            Text(tr("Nada tocando agora", "Nothing playing right now"))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -158,10 +166,10 @@ struct PlayerView: View {
                     ArtView(url: music.song?.imageSrc, tamanho: 150)
                 }
                 .buttonStyle(.plain)
-                .help("Abrir YouTube Music")
+                .help(tr("Abrir YouTube Music", "Open YouTube Music"))
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(music.song?.title ?? "Nada tocando")
+                        Text(music.song?.title ?? tr("Nada tocando", "Nothing playing"))
                             .font(.system(size: 18, weight: .semibold))
                             .lineLimit(2)
                         Text(music.song?.artist ?? "")
@@ -188,7 +196,7 @@ struct PlayerView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help("Curtir música")
+                        .help(tr("Curtir música", "Like song"))
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -281,7 +289,7 @@ struct TrayView: View {
             HStack(spacing: 10) {
                 Spacer(minLength: 0)
                 if tray.files.isEmpty {
-                    Text("O que você copiar aparece aqui")
+                    Text(tr("O que você copiar aparece aqui", "Anything you copy shows up here"))
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .frame(width: 320)
@@ -406,7 +414,7 @@ struct MiniaturaView: View {
                         .overlay(FaiscasView(disparo: disparos))
                 }
                 .buttonStyle(.plain)
-                .help("Copiar texto")
+                .help(tr("Copiar texto", "Copy text"))
                 .padding(6)
             }
         }
@@ -431,8 +439,8 @@ struct MiniaturaView: View {
             return true
         }
         .contextMenu {
-            Button("Mostrar no Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-            Button("Remover da bandeja") { tray.remover(url) }
+            Button(tr("Mostrar no Finder", "Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            Button(tr("Remover da bandeja", "Remove from shelf")) { tray.remover(url) }
         }
     }
 

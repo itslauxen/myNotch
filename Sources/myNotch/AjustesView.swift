@@ -9,6 +9,7 @@ struct AjustesView: View {
 
     @AppStorage(Ditado.chaveMicrofone) private var microfone = ""
     @AppStorage(Config.idiomaDitado) private var idioma = "pt-BR"
+    @AppStorage(Config.idiomaApp) private var idiomaApp = Config.idiomaPadrao
     @AppStorage(Config.pararNoSilencio) private var pararNoSilencio = false
     @AppStorage(Config.limiteBandeja) private var limiteBandeja = 6
     @AppStorage(Config.bandejaTextos) private var bandejaTextos = true
@@ -24,65 +25,71 @@ struct AjustesView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
-                secao("Geral") {
-                    linha("Abrir ao iniciar o Mac") {
+                secao(tr("Geral", "General")) {
+                    linha(tr("Abrir ao iniciar o Mac", "Open at login")) {
                         Toggle("", isOn: Binding(get: { abrirAoIniciar }, set: alternarLogin))
                             .toggleStyle(.switch).controlSize(.small).labelsHidden()
                     }
-                    linha("Integração com o Nova Notes") {
+                    linha(tr("Idioma", "Language")) {
+                        HStack(spacing: 2) {
+                            pilula("Português", ativa: idiomaApp == "pt") { idiomaApp = "pt" }
+                            pilula("English", ativa: idiomaApp == "en") { idiomaApp = "en" }
+                        }
+                    }
+                    linha(tr("Integração com o Nova Notes", "Nova Notes integration")) {
                         Toggle("", isOn: $novaLigada).toggleStyle(.switch).controlSize(.small).labelsHidden()
                     }
                 }
 
                 if novaLigada {
-                    secao("Conta do Nova Notes") {
+                    secao(tr("Conta do Nova Notes", "Nova Notes account")) {
                         if nova.logado {
-                            linha(nova.email.map { "Conectado como \($0)" } ?? "Conectado") {
-                                botao("Sair") { nova.sair() }
+                            linha(nova.email.map { tr("Conectado como \($0)", "Signed in as \($0)") } ?? tr("Conectado", "Signed in")) {
+                                botao(tr("Sair", "Sign out")) { nova.sair() }
                             }
                         } else {
-                            linha("Não conectado. Entre pela aba Nova.") { EmptyView() }
+                            linha(tr("Não conectado. Entre pela aba Nova.", "Not signed in. Sign in from the Nova tab.")) { EmptyView() }
                         }
                     }
                 }
 
-                secao("Bandeja") {
-                    linha("Quantos itens guardar") {
+                secao(tr("Bandeja", "Shelf")) {
+                    linha(tr("Quantos itens guardar", "Items to keep")) {
                         contador($limiteBandeja, de: 3, ate: 20)
                     }
-                    linha("Guardar textos copiados") {
+                    linha(tr("Guardar textos copiados", "Keep copied text")) {
                         Toggle("", isOn: $bandejaTextos).toggleStyle(.switch).controlSize(.small).labelsHidden()
                     }
-                    linha("Guardar imagens e prints") {
+                    linha(tr("Guardar imagens e prints", "Keep images and screenshots")) {
                         Toggle("", isOn: $bandejaImagens).toggleStyle(.switch).controlSize(.small).labelsHidden()
                     }
                 }
 
-                secao("Ditado") {
+                secao(tr("Ditado", "Dictation")) {
                     VStack(spacing: 2) {
                         ForEach(microfones, id: \.uniqueID) { linhaMicrofone($0) }
                     }
-                    linha("Idioma") {
+                    linha(tr("Idioma do ditado", "Dictation language")) {
                         HStack(spacing: 2) {
                             ForEach(Ditado.idiomas, id: \.codigo) { opcao in
                                 pilula(opcao.nome, ativa: idioma == opcao.codigo) { idioma = opcao.codigo }
                             }
                         }
                     }
-                    linha("Parar sozinho após 3 s de silêncio") {
+                    linha(tr("Parar sozinho após 3 s de silêncio", "Stop after 3 s of silence")) {
                         Toggle("", isOn: $pararNoSilencio).toggleStyle(.switch).controlSize(.small).labelsHidden()
                     }
                 }
 
-                secao("Nota rápida") {
-                    linha("Tamanho da fonte") {
+                secao(tr("Nota rápida", "Quick note")) {
+                    linha(tr("Tamanho da fonte", "Font size")) {
                         contador(Binding(get: { Int(fonte) }, set: { fonte = Double($0) }), de: 10, ate: 22)
                     }
                 }
 
-                secao("Atalhos") {
-                    linha("Mostrar e esconder o notch") { GravadorDeAtalho(atalho: $atalhoNotch) }
-                    linha("Ditar na nota rápida") { GravadorDeAtalho(atalho: $atalhoDitado) }
+                secao(tr("Atalhos", "Shortcuts")) {
+                    linha(tr("Mostrar e esconder o notch", "Show or hide the notch")) { GravadorDeAtalho(atalho: $atalhoNotch) }
+                    linha(tr("Ditar na nota rápida", "Dictate in quick note")) { GravadorDeAtalho(atalho: $atalhoDitado) }
                 }
             }
             .padding(.bottom, 4)
@@ -218,7 +225,7 @@ struct GravadorDeAtalho: View {
         Button {
             gravando ? parar() : comecar()
         } label: {
-            Text(gravando ? "Aperte o atalho…" : atalho.texto)
+            Text(gravando ? tr("Aperte o atalho…", "Press a shortcut…") : atalho.texto)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(gravando ? Color.accentColor : Color.white)
                 .padding(.horizontal, 10)

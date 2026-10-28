@@ -17,7 +17,7 @@ struct NovaNota: Codable, Identifiable, Equatable {
 
     var titulo: String {
         let t = (title ?? "").trimmingCharacters(in: .whitespaces)
-        return t.isEmpty ? "Sem título" : t
+        return t.isEmpty ? tr("Sem título", "Untitled") : t
     }
     var icone: String { emoji.flatMap { $0.isEmpty ? nil : $0 } ?? "📄" }
 }
@@ -66,6 +66,15 @@ final class NovaStore: ObservableObject {
     private var pendentes: [String: [String: Any]] = [:]
     private var envio: Task<Void, Never>?
 
+    /// Prévia com notas fixas, sem conta nem rede (gera o GIF do README).
+    private var exemplo = false
+    init(exemplo notas: [NovaNota]) {
+        self.notas = notas
+        selecionada = notas.first?.id
+        logado = true
+        exemplo = true
+    }
+
     init() {
         let salva = (try? Data(contentsOf: arquivoSessao)).flatMap { try? JSONDecoder().decode(Sessao.self, from: $0) }
         sessao = salva
@@ -91,14 +100,14 @@ final class NovaStore: ObservableObject {
     }
 
     private func renovar() async throws {
-        guard let sessao else { throw NovaErro("Entre de novo na sua conta") }
+        guard let sessao else { throw NovaErro(tr("Entre de novo na sua conta", "Sign in again")) }
         do {
             let dados = try await pedir("POST", "/auth/v1/token?grant_type=refresh_token",
                                         corpo: ["refresh_token": sessao.refreshToken], autenticado: false)
             self.sessao = try Self.lerSessao(dados)
         } catch {
             sair()
-            throw NovaErro("Sessão expirada, entre de novo")
+            throw NovaErro(tr("Sessão expirada, entre de novo", "Session expired, sign in again"))
         }
     }
 
@@ -107,14 +116,14 @@ final class NovaStore: ObservableObject {
               let access = json["access_token"] as? String,
               let refresh = json["refresh_token"] as? String,
               let user = json["user"] as? [String: Any], let id = user["id"] as? String
-        else { throw NovaErro("Resposta inesperada do login") }
+        else { throw NovaErro(tr("Resposta inesperada do login", "Unexpected sign-in response")) }
         return Sessao(accessToken: access, refreshToken: refresh, userId: id, email: user["email"] as? String)
     }
 
     /* ---------------- notas ---------------- */
 
     func carregar() async {
-        guard logado, Config.novaLigada else { return }
+        guard logado, Config.novaLigada, !exemplo else { return }
         carregando = true
         defer { carregando = false }
         do {
@@ -240,8 +249,8 @@ final class NovaStore: ObservableObject {
         guard (200..<300).contains(status) else {
             let json = (try? JSONSerialization.jsonObject(with: dados)) as? [String: Any]
             let msg = (json?["error_description"] ?? json?["msg"] ?? json?["message"]) as? String
-            if status == 400, caminho.contains("grant_type=password") { throw NovaErro("E-mail ou senha incorretos") }
-            throw NovaErro(msg ?? "Erro \(status) no Nova Notes")
+            if status == 400, caminho.contains("grant_type=password") { throw NovaErro(tr("E-mail ou senha incorretos", "Wrong email or password")) }
+            throw NovaErro(msg ?? tr("Erro \(status) no Nova Notes", "Nova Notes error \(status)"))
         }
         return dados
     }

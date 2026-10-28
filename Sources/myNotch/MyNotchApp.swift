@@ -67,6 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var notchVisivel = true
     private var itemMostrar: NSMenuItem?
     private var itemLogin: NSMenuItem?
+    private var itemSair: NSMenuItem?
     private var atalho: EventHotKeyRef?
     private var atalhoLigado: Atalho?
 
@@ -117,6 +118,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemMostrar?.keyEquivalent = combinacao.letra
         itemMostrar?.keyEquivalentModifierMask = combinacao.modificadores
         itemLogin?.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        // O idioma pode ter mudado nos Ajustes.
+        itemMostrar?.title = tr("Mostrar notch", "Show notch")
+        itemLogin?.title = tr("Abrir ao iniciar o Mac", "Open at login")
+        itemSair?.title = tr("Sair do myNotch", "Quit myNotch")
     }
 
     private func atualizarHover() {
@@ -191,7 +196,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(login)
         itemLogin = login
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Sair do myNotch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        let sair = NSMenuItem(title: "Sair do myNotch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(sair)
+        itemSair = sair
         menu.delegate = self
         item.menu = menu
         statusItem = item

@@ -24,12 +24,14 @@ final class Ditado: ObservableObject {
     let nivel = NivelDeVoz()
 
     /// Idiomas oferecidos nos Ajustes.
-    static let idiomas: [(codigo: String, nome: String)] = [("pt-BR", "Português"), ("en-US", "Inglês"), ("es-ES", "Espanhol")]
+    static var idiomas: [(codigo: String, nome: String)] {
+        [("pt-BR", tr("Português", "Portuguese")), ("en-US", tr("Inglês", "English")), ("es-ES", tr("Espanhol", "Spanish"))]
+    }
     /// Silêncio, em segundos, para o ditado parar sozinho (quando ligado nos Ajustes).
     static let silencioParaParar: TimeInterval = 3
     private var vigia: Timer?
     /// Captura pelo AVCaptureSession, que deixa escolher o microfone. O AVAudioEngine sempre nasce
-    /// no microfone padrão (o AirPods) e recusava trocar depois (erro -10868, formato não suportado).
+    /// no microfone padrão do sistema e recusava trocar depois (erro -10868, formato não suportado).
     private var captura: AVCaptureSession?
     private var receptor: ReceptorDeAudio?
     private let filaAudio = DispatchQueue(label: "dev.lauxen.mynotch.ditado")
@@ -42,12 +44,12 @@ final class Ditado: ObservableObject {
         ativo = true
         registrarDebug("ditado: começou; fala=\(SFSpeechRecognizer.authorizationStatus().rawValue) mic=\(AVCaptureDevice.authorizationStatus(for: .audio).rawValue)")
         guard await Self.permitido() else {
-            falhar("Libere o microfone e o reconhecimento de fala em Ajustes do Sistema › Privacidade")
+            falhar(tr("Libere o microfone e o reconhecimento de fala em Ajustes do Sistema › Privacidade", "Allow the microphone and speech recognition in System Settings › Privacy"))
             return
         }
         let reconhecedor = SFSpeechRecognizer(locale: Locale(identifier: Config.texto(Config.idiomaDitado, "pt-BR")))
         guard let reconhecedor, reconhecedor.isAvailable else {
-            falhar("Reconhecimento de fala indisponível agora")
+            falhar(tr("Reconhecimento de fala indisponível agora", "Speech recognition is unavailable right now"))
             return
         }
         let pedido = SFSpeechAudioBufferRecognitionRequest()
@@ -55,11 +57,11 @@ final class Ditado: ObservableObject {
         if reconhecedor.supportsOnDeviceRecognition { pedido.requiresOnDeviceRecognition = true }
         self.pedido = pedido
 
-        // Sempre o microfone do próprio Mac: o padrão do sistema costuma ser o AirPods, e o
-        // microfone dele está quebrado (o reconhecedor só ouvia silêncio).
+        // O microfone escolhido nos Ajustes (padrão: o do próprio Mac), não o padrão do sistema:
+        // fones Bluetooth costumam virar o padrão e nem sempre captam bem.
         guard let mic = Self.microfoneEscolhido(),
               let entrada = try? AVCaptureDeviceInput(device: mic) else {
-            falhar("Nenhum microfone encontrado")
+            falhar(tr("Nenhum microfone encontrado", "No microphone found"))
             return
         }
         registrarDebug("ditado: microfone \(mic.localizedName)")
@@ -78,7 +80,7 @@ final class Ditado: ObservableObject {
         captura.beginConfiguration()
         guard captura.canAddInput(entrada), captura.canAddOutput(saida) else {
             captura.commitConfiguration()
-            falhar("Não consegui abrir o microfone")
+            falhar(tr("Não consegui abrir o microfone", "Couldn't open the microphone"))
             return
         }
         captura.addInput(entrada)
@@ -156,7 +158,7 @@ final class Ditado: ObservableObject {
         microfones().first { $0.transportType == Int32(bitPattern: kAudioDeviceTransportTypeBuiltIn) }
     }
 
-    /// O escolhido nos Ajustes; se ele não estiver ligado, o do Mac (o do AirPods está quebrado).
+    /// O escolhido nos Ajustes; se ele não estiver ligado, o do Mac.
     static func microfoneEscolhido() -> AVCaptureDevice? {
         let id = UserDefaults.standard.string(forKey: chaveMicrofone) ?? ""
         return microfones().first { $0.uniqueID == id } ?? microfoneDoMac() ?? AVCaptureDevice.default(for: .audio)

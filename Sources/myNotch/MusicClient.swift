@@ -38,6 +38,12 @@ final class MusicClient: ObservableObject {
         }
     }
 
+    /// Prévia com uma música fixa, sem consultar o YouTube Music nem o Chrome (gera o GIF do README).
+    init(exemplo: SongInfo) {
+        song = exemplo
+        online = true
+    }
+
     func refresh() async {
         guard !atualizando else { return }
         atualizando = true

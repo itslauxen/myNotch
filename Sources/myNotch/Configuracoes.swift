@@ -15,6 +15,11 @@ enum Config {
 
     static let fontePadrao: Double = 13
 
+    /// Idioma da interface ("pt" ou "en"). Sem escolha, segue o do sistema.
+    static let idiomaApp = "appIdioma"
+    static var idiomaPadrao: String { Locale.preferredLanguages.first?.hasPrefix("pt") == true ? "pt" : "en" }
+    static var ingles: Bool { texto(idiomaApp, idiomaPadrao) == "en" }
+
     /// Integração com o Nova Notes (Ajustes › Geral). Desligada, a aba Nova e a conta somem.
     static let novaNotes = "novaNotes"
     static var novaLigada: Bool { bool(novaNotes, true) }
@@ -32,6 +37,9 @@ enum Config {
         UserDefaults.standard.object(forKey: chave) as? Double ?? padrao
     }
 }
+
+/// Texto da interface no idioma escolhido nos Ajustes: `tr("Salvar", "Save")`.
+func tr(_ pt: String, _ en: String) -> String { Config.ingles ? en : pt }
 
 /// Um atalho de teclado gravado nos Ajustes. Guardado como texto ("código;letra;modificadores")
 /// para o @AppStorage aceitar.

@@ -22,7 +22,7 @@ struct NovaView: View {
             if let nota = nova.nota {
                 editor(nota)
             } else {
-                Text(nova.carregando ? "Carregando…" : "Nenhuma nota ainda")
+                Text(nova.carregando ? tr("Carregando…", "Loading…") : tr("Nenhuma nota ainda", "No notes yet"))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -45,7 +45,7 @@ struct NovaView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
-                    TextField("Buscar", text: $busca)
+                    TextField(tr("Buscar", "Search"), text: $busca)
                         .textFieldStyle(.plain)
                         .font(.system(size: 12))
                 }
@@ -61,7 +61,7 @@ struct NovaView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
-                .help("Nova nota")
+                .help(tr("Nova nota", "New note"))
             }
 
             ScrollView(showsIndicators: false) {
@@ -78,8 +78,8 @@ struct NovaView: View {
                                  startPoint: .top, endPoint: .bottom))
         }
         .contextMenu {
-            Button("Atualizar") { Task { await nova.carregar() } }
-            Button("Sair do Nova Notes") { nova.sair() }
+            Button(tr("Atualizar", "Refresh")) { Task { await nova.carregar() } }
+            Button(tr("Sair do Nova Notes", "Sign out of Nova Notes")) { nova.sair() }
         }
     }
 
@@ -87,7 +87,7 @@ struct NovaView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(nota.icone).font(.system(size: 16))
-                TextField("Sem título", text: Binding(
+                TextField(tr("Sem título", "Untitled"), text: Binding(
                     get: { nota.title ?? "" },
                     set: { nova.editarTitulo(nota.id, $0) }
                 ))
@@ -105,7 +105,7 @@ struct NovaView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
-                .help("Abrir no Nova Notes")
+                .help(tr("Abrir no Nova Notes", "Open in Nova Notes"))
             }
             .frame(height: 28)
 
@@ -121,8 +121,8 @@ struct NovaView: View {
     /// Alterna leitura e edição: os dois ícones lado a lado, o ativo com fundo.
     private var modo: some View {
         HStack(spacing: 2) {
-            botaoModo("book", "Leitura: links abrem no clique", ativo: !editando) { editando = false }
-            botaoModo("pencil", "Edição", ativo: editando) { editando = true }
+            botaoModo("book", tr("Leitura: links abrem no clique", "Reading: links open on click"), ativo: !editando) { editando = false }
+            botaoModo("pencil", tr("Edição", "Editing"), ativo: editando) { editando = true }
         }
         .padding(2)
         .background(RoundedRectangle(cornerRadius: 9).fill(Color.white.opacity(0.08)))
@@ -146,10 +146,10 @@ struct NovaView: View {
     @ViewBuilder private var status: some View {
         switch nova.estado {
         case .salvando:
-            Text("Salvando…").font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(tr("Salvando…", "Saving…")).font(.system(size: 11)).foregroundStyle(.secondary)
         case .salvo:
             Image(systemName: "checkmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                .help("Salvo")
+                .help(tr("Salvo", "Saved"))
         case .erro(let msg):
             Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11)).foregroundStyle(.yellow)
                 .help(msg)
@@ -195,13 +195,13 @@ struct NovaLoginView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Text("Entre com sua conta do Nova Notes")
+            Text(tr("Entre com sua conta do Nova Notes", "Sign in with your Nova Notes account"))
                 .font(.system(size: 13, weight: .semibold))
-            campo { TextField("E-mail", text: $email) }
-            campo { SecureField("Senha", text: $senha).onSubmit(entrar) }
+            campo { TextField(tr("E-mail", "Email"), text: $email) }
+            campo { SecureField(tr("Senha", "Password"), text: $senha).onSubmit(entrar) }
             Button(action: entrar) {
                 Group {
-                    if entrando { ProgressView().controlSize(.small) } else { Text("Entrar") }
+                    if entrando { ProgressView().controlSize(.small) } else { Text(tr("Entrar", "Sign in")) }
                 }
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.black)
@@ -339,6 +339,10 @@ struct EditorMarkdown: NSViewRepresentable {
 /// Clicar na caixinha de uma tarefa marca ou desmarca, como na web, nos dois modos. Link abre
 /// no clique na leitura e com ⌘-clique na edição (lá o clique só põe o cursor).
 final class TextoMarkdown: NSTextView {
+    /// O painel quase nunca é a janela ativa; sem isto o primeiro clique só a ativava e o link
+    /// (ou a caixinha) não reagia.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     /// Link do caractere exatamente debaixo do ponto (não o mais perto, como faz a inserção).
     func link(em ponto: NSPoint) -> URL? {
         guard let lm = layoutManager, let tc = textContainer, let s = textStorage, s.length > 0 else { return nil }
@@ -355,9 +359,11 @@ final class TextoMarkdown: NSTextView {
         let ponto = convert(event.locationInWindow, from: nil)
         // Abre antes de mexer na seleção: ela redesenha a linha com os símbolos e o clique se perdia.
         if !isEditable || event.modifierFlags.contains(.command), let url = link(em: ponto) {
+            registrarDebug("nova: clique abriu \(url.absoluteString)")
             NSWorkspace.shared.open(url)
             return
         }
+        if !isEditable { registrarDebug("nova: clique na leitura sem link (caractere \(characterIndexForInsertion(at: ponto)))") }
         let indice = characterIndexForInsertion(at: ponto)
         let texto = string as NSString
         if texto.length > 0, indice <= texto.length {
